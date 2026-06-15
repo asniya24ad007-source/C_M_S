@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Management System Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+
+    <nav class="bg-slate-800 p-4 text-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-wider flex items-center gap-2">🏫 College Management System</h1>
+            <span class="text-xs bg-indigo-600 px-3 py-1 rounded-full font-semibold uppercase tracking-wide">Serverless Standalone Portal</span>
+        </div>
+    </nav>
+
+    <div class="flex min-h-screen">
+        <aside class="w-64 bg-slate-900 text-slate-300 p-6 space-y-2 shrink-0">
+            <div class="text-xs uppercase font-bold tracking-wider text-slate-500 mb-4">Core Tables</div>
+            <button onclick="switchTab('Department')" id="btn-Department" class="w-full text-left py-2.5 px-4 rounded-lg transition-all font-medium sidebar-btn bg-indigo-600 text-white">🗂️ Departments</button>
+            <button onclick="switchTab('Student')" id="btn-Student" class="w-full text-left py-2.5 px-4 rounded-lg transition-all font-medium sidebar-btn hover:bg-slate-800">🎓 Students</button>
+            <button onclick="switchTab('Faculty')" id="btn-Faculty" class="w-full text-left py-2.5 px-4 rounded-lg transition-all font-medium sidebar-btn hover:bg-slate-800">👔 Faculty</button>
+            <button onclick="switchTab('Course')" id="btn-Course" class="w-full text-left py-2.5 px-4 rounded-lg transition-all font-medium sidebar-btn hover:bg-slate-800">📖 Courses</button>
+            
+            <div class="text-xs uppercase font-bold tracking-wider text-slate-500 pt-6 mb-4">Operations</div>
+            <button onclick="switchTab('Enrollment')" id="btn-Enrollment" class="w-full text-left py-2.5 px-4 rounded-lg transition-all font-medium sidebar-btn hover:bg-slate-800">📝 Enrollments</button>
+            <button onclick="switchTab('Marks')" id="btn-Marks" class="w-full text-left py-2.5 px-4 rounded-lg transition-all font-medium sidebar-btn hover:bg-slate-800">💯 Marks Entry</button>
+            <button onclick="switchTab('Attendance')" id="btn-Attendance" class="w-full text-left py-2.5 px-4 rounded-lg transition-all font-medium sidebar-btn hover:bg-slate-800">📅 Attendance</button>
+        </aside>
+
+        <main class="flex-1 p-8">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 id="tableHeading" class="text-3xl font-extrabold text-slate-800">Departments</h2>
+                    <p id="tableSubheading" class="text-sm text-slate-500 mt-1">Manage academic branches and heads of departments.</p>
+                </div>
+                <button onclick="openFormModal('add')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-5 rounded-lg shadow-sm transition flex items-center gap-2">
+                    ➕ Add Entry
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow border border-slate-200 overflow-hidden">
+                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead id="tableHeader" class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider text-xs">
+                        </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-200 text-slate-700 bg-white">
+                        </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <div id="universalModal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
+            <div class="bg-indigo-600 px-6 py-4 text-white flex justify-between items-center">
+                <h3 id="modalTitle" class="font-bold text-lg">Add Record</h3>
+                <button onclick="closeFormModal()" class="text-white hover:text-slate-200 text-2xl font-semibold outline-none">&times;</button>
+            </div>
+            <form id="modalDynamicForm" onsubmit="handleFormSubmission(event)" class="p-6 space-y-4">
+                <div id="formFieldsContainer" class="space-y-4"></div>
+                
+                <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeFormModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-4 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Configuration structural maps mirroring your exact SQL attributes
+        const databaseConfig = {
+            Department: {
+                fields: ['Dept_ID', 'Dept_Name', 'HOD_Name'],
+                labels: ['Department ID', 'Department Name', 'HOD Name'],
+                subtext: 'Manage academic branches and heads of departments.'
+            },
+            Student: {
+                fields: ['Student_ID', 'Name', 'DOB', 'Gender', 'Phone', 'Email', 'Dept_ID', 'Address'],
+                labels: ['Student ID', 'Full Name', 'Date of Birth', 'Gender', 'Phone Number', 'Email', 'Department ID', 'Address'],
+                subtext: 'Manage registered student profiles and bio metrics.'
+            },
+            Faculty: {
+                fields: ['Faculty_ID', 'Name', 'Dept_ID', 'Designation', 'Phone', 'Email'],
+                labels: ['Faculty ID', 'Professor Name', 'Department ID', 'Designation', 'Phone', 'Email'],
+                subtext: 'Manage professors and lecturing staff members.'
+            },
+            Course: {
+                fields: ['Course_ID', 'Course_Name', 'Credits', 'Dept_ID'],
+                labels: ['Course ID', 'Course Name', 'Academic Credits', 'Department ID'],
+                subtext: 'Manage syllabus topics and curriculum credits allocation.'
+            },
+            Enrollment: {
+                fields: ['Enroll_ID', 'Student_ID', 'Course_ID', 'Semester', 'Year'],
+                labels: ['Enrollment ID', 'Student ID', 'Course ID', 'Semester', 'Academic Year'],
+                subtext: 'Assign students to respective technical curriculum courses.'
+            },
+            Marks: {
+                fields: ['Mark_ID', 'Student_ID', 'Course_ID', 'Internal', 'External', 'Total'],
+                labels: ['Mark record ID', 'Student ID', 'Course ID', 'Internal Score', 'External Score', 'Total (Auto calculated)'],
+                subtext: 'Track subject grading portfolios. Trigger calculations automatically.'
+            },
+            Attendance: {
+                fields: ['Attendance_ID', 'Student_ID', 'Course_ID', 'Date', 'Status'],
+                labels: ['Attendance Record ID', 'Student ID', 'Course ID', 'Date', 'Status (Present/Absent)'],
+                subtext: 'Monitor and track class roster validation histories.'
+            }
+        };
+
+        // Populate baseline seed content from provided source file arrays if memory is clean
+        function initializeDatabase() {
+            if (!localStorage.getItem('db_initialized')) {
+                localStorage.setItem('Department', JSON.stringify([
+                    { Dept_ID: 1, Dept_Name: 'CSE', HOD_Name: 'Dr. Rao' },
+                    { Dept_ID: 2, Dept_Name: 'ECE', HOD_Name: 'Dr. Sharma' }
+                ]));
+                localStorage.setItem('Student', JSON.stringify([
+                    { Student_ID: 101, Name: 'Arjun', DOB: '2003-05-12', Gender: 'Male', Phone: '9876543210', Email: 'arjun@gmail.com', Dept_ID: 1, Address: 'Udupi' },
+                    { Student_ID: 102, Name: 'Priya', DOB: '2004-08-20', Gender: 'Female', Phone: '9123456780', Email: 'priya@gmail.com', Dept_ID: 2, Address: 'Mangalore' }
+                ]));
+                localStorage.setItem('Course', JSON.stringify([
+                    { Course_ID: 201, Course_Name: 'DBMS', Credits: 4, Dept_ID: 1 },
+                    { Course_ID: 202, Course_Name: 'CN', Credits: 4, Dept_ID: 1 }
+                ]));
+                localStorage.setItem('Faculty', JSON.stringify([
+                    { Faculty_ID: 301, Name: 'Dr. Anil Kumar', Dept_ID: 1, Designation: 'Professor', Phone: '9876501111', Email: 'anil@college.com' },
+                    { Faculty_ID: 302, Name: 'Dr. Meena Rao', Dept_ID: 2, Designation: 'Associate Professor', Phone: '9876502222', Email: 'meena@college.com' }
+                ]));
+                localStorage.setItem('Enrollment', JSON.stringify([
+                    { Enroll_ID: 401, Student_ID: 101, Course_ID: 201, Semester: 3, Year: 2025 },
+                    { Enroll_ID: 402, Student_ID: 102, Course_ID: 202, Semester: 3, Year: 2025 },
+                    { Enroll_ID: 403, Student_ID: 101, Course_ID: 202, Semester: 3, Year: 2025 }
+                ]));
+                localStorage.setItem('Marks', JSON.stringify([
+                    { Mark_ID: 501, Student_ID: 101, Course_ID: 201, Internal: 25, External: 65, Total: 90 },
+                    { Mark_ID: 502, Student_ID: 102, Course_ID: 202, Internal: 28, External: 60, Total: 88 },
+                    { Mark_ID: 503, Student_ID: 101, Course_ID: 202, Internal: 30, External: 58, Total: 88 }
+                ]));
+                localStorage.setItem('Attendance', JSON.stringify([
+                    { Attendance_ID: 601, Student_ID: 101, Course_ID: 201, Date: '2025-06-01', Status: 'Present' },
+                    { Attendance_ID: 602, Student_ID: 101, Course_ID: 201, Date: '2025-06-02', Status: 'Absent' },
+                    { Attendance_ID: 603, Student_ID: 102, Course_ID: 202, Date: '2025-06-01', Status: 'Present' },
+                    { Attendance_ID: 604, Student_ID: 102, Course_ID: 202, Date: '2025-06-02', Status: 'Present' },
+                    { Attendance_ID: 605, Student_ID: 101, Course_ID: 202, Date: '2025-06-03', Status: 'Present' }
+                ]));
+                localStorage.setItem('db_initialized', 'true');
+            }
+        }
+
+        let currentTab = 'Department';
+        let editRowId = null;
+
+        // Dynamic State Tab Switching
+        function switchTab(tableName) {
+            currentTab = tableName;
+            
+            // Set styles for the active navigation item
+            document.querySelectorAll('.sidebar-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('hover:bg-slate-800');
+            });
+            const activeBtn = document.getElementById(`btn-${tableName}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('hover:bg-slate-800');
+                activeBtn.classList.add('bg-indigo-600', 'text-white');
+            }
+
+            // Render descriptive metadata
+            document.getElementById('tableHeading').innerText = tableName + "s";
+            document.getElementById('tableSubheading').innerText = databaseConfig[tableName].subtext;
+
+            renderTableLayout();
+        }
+
+        // Render Table Headers and Data Rows
+        function renderTableLayout() {
+            const config = databaseConfig[currentTab];
+            const data = JSON.parse(localStorage.getItem(currentTab)) || [];
+            
+            // Render Head Columns
+            const headContainer = document.getElementById('tableHeader');
+            let trHtml = '<tr>';
+            config.labels.forEach(label => {
+                trHtml += `<th class="px-6 py-3.5 text-left">${label}</th>`;
+            });
+            trHtml += '<th class="px-6 py-3.5 text-right">Actions</th></tr>';
+            headContainer.innerHTML = trHtml;
+
+            // Render Body Columns
+            const bodyContainer = document.getElementById('tableBody');
+            bodyContainer.innerHTML = '';
+
+            if (data.length === 0) {
+                bodyContainer.innerHTML = `<tr><td colspan="${config.fields.length + 1}" class="px-6 py-8 text-center text-slate-400">No records found. Click 'Add Entry' to insert a record.</td></tr>`;
+                return;
+            }
+
+            data.forEach((item) => {
+                let rowHtml = `<tr class="hover:bg-slate-50/80 transition-colors">`;
+                config.fields.forEach(field => {
+                    rowHtml += `<td class="px-6 py-4 font-medium text-slate-600">${item[field] !== undefined ? item[field] : ''}</td>`;
+                });
+                
+                const serializedItem = JSON.stringify(item).replace(/"/g, '&quot;');
+                const primaryKeyVal = item[config.fields[0]];
+
+                rowHtml += `
+                    <td class="px-6 py-4 whitespace-nowrap text-right space-x-2 font-medium">
+                        <button onclick="openFormModal('edit', ${serializedItem})" class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-md text-xs transition">Edit</button>
+                        <button onclick="deleteEntryRecord(${primaryKeyVal})" class="text-rose-600 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 px-3 py-1 rounded-md text-xs transition">Delete</button>
+                    </td>
+                </tr>`;
+                bodyContainer.innerHTML += rowHtml;
+            });
+        }
+
+        // Form Overlay Modal Engine Generation
+        function openFormModal(mode = 'add', dataItem = null) {
+            const modal = document.getElementById('universalModal');
+            const title = document.getElementById('modalTitle');
+            const container = document.getElementById('formFieldsContainer');
+            const config = databaseConfig[currentTab];
+            
+            container.innerHTML = '';
+            modal.classList.remove('hidden');
+
+            if (mode === 'edit') {
+                title.innerText = `Edit ${currentTab} Data`;
+                editRowId = dataItem[config.fields[0]]; 
+            } else {
+                title.innerText = `Add New ${currentTab}`;
+                editRowId = null;
+            }
+
+            config.fields.forEach((field, index) => {
+                if (currentTab === 'Marks' && field === 'Total') return;
+
+                const labelText = config.labels[index];
+                const inputId = `input-${field}`;
+                let value = (mode === 'edit' && dataItem) ? dataItem[field] : '';
+
+                let inputElement = '';
+                
+                if (field === 'Gender') {
+                    inputElement = `
+                        <select id="${inputId}" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 bg-white" required>
+                            <option value="Male" ${value==='Male'?'selected':''}>Male</option>
+                            <option value="Female" ${value==='Female'?'selected':''}>Female</option>
+                            <option value="Other" ${value==='Other'?'selected':''}>Other</option>
+                        </select>`;
+                } else if (field === 'Status') {
+                    inputElement = `
+                        <select id="${inputId}" class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 bg-white" required>
+                            <option value="Present" ${value==='Present'?'selected':''}>Present</option>
+                            <option value="Absent" ${value==='Absent'?'selected':''}>Absent</option>
+                        </select>`;
+                } else {
+                    let type = "text";
+                    if (field.includes('ID') || field === 'Credits' || field === 'Semester' || field === 'Year' || field === 'Internal' || field === 'External') type = "number";
+                    if (field === 'DOB' || field === 'Date') type = "date";
+                    if (field === 'Email') type = "email";
+
+                    let disableAttr = (mode === 'edit' && index === 0) ? 'disabled class="w-full border border-slate-200 bg-slate-50 text-slate-400 rounded-lg px-3 py-2 outline-none"' : 'class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"';
+
+                    inputElement = `<input type="${type}" id="${inputId}" value="${value}" required ${disableAttr}>`;
+                }
+
+                container.innerHTML += `
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1 tracking-wide uppercase">${labelText}</label>
+                        ${inputElement}
+                    </div>`;
+            });
+        }
+
+        function closeFormModal() {
+            document.getElementById('universalModal').classList.add('hidden');
+        }
+
+        // Add/Edit Processing Logic
+        function handleFormSubmission(event) {
+            event.preventDefault();
+            const config = databaseConfig[currentTab];
+            let store = JSON.parse(localStorage.getItem(currentTab)) || [];
+            
+            let record = {};
+            config.fields.forEach(field => {
+                const element = document.getElementById(`input-${field}`);
+                if (element) {
+                    let val = element.value;
+                    if (element.type === 'number') val = parseInt(val);
+                    record[field] = val;
+                }
+            });
+
+            // Replicate Document Trigger Logic
+            if (currentTab === 'Marks') {
+                record['Total'] = (parseInt(record['Internal']) || 0) + (parseInt(record['External']) || 0);
+
+                if (record['Internal'] < 0 || record['External'] < 0) {
+                    alert("Trigger Conflict Exception: Internal or External marks cannot be negative.");
+                    return;
+                }
+            }
+
+            if (currentTab === 'Attendance') {
+                if (!['Present', 'Absent'].includes(record['Status'])) {
+                    alert("Trigger Validation Exception: Invalid status input configuration requested.");
+                    return;
+                }
+
+                const enrollments = JSON.parse(localStorage.getItem('Enrollment')) || [];
+                const isEnrolled = enrollments.some(e => e.Student_ID === parseInt(record['Student_ID']) && e.Course_ID === parseInt(record['Course_ID']));
+                if (!isEnrolled) {
+                    alert("Trigger Check Enrollment Exception: Student is not actively enrolled inside this specified course curriculum.");
+                    return;
+                }
+            }
+
+            const keyName = config.fields[0];
+
+            if (editRowId !== null) {
+                record[keyName] = editRowId; 
+                store = store.map(item => item[keyName] === editRowId ? record : item);
+            } else {
+                const checkId = record[keyName];
+                if (store.some(item => item[keyName] === checkId)) {
+                    alert(`Identity code ${checkId} already exists inside database registry lists.`);
+                    return;
+                }
+                store.push(record);
+            }
+
+            localStorage.setItem(currentTab, JSON.stringify(store));
+            closeFormModal();
+            renderTableLayout();
+        }
+
+        // Execute Delete Operation
+        function deleteEntryRecord(primaryKeyVal) {
+            if (confirm(`Are you sure you want to drop this record?`)) {
+                const config = databaseConfig[currentTab];
+                const keyName = config.fields[0];
+                let store = JSON.parse(localStorage.getItem(currentTab)) || [];
+                
+                store = store.filter(item => item[keyName] !== primaryKeyVal);
+                localStorage.setItem(currentTab, JSON.stringify(store));
+                renderTableLayout();
+            }
+        }
+
+        // Clear previous state, initialize, and display layout safely
+        localStorage.removeItem('db_initialized'); // Ensures fresh seed run
+        initializeDatabase();
+        switchTab('Department');
+    </script>
+</body>
+</html>
